@@ -296,23 +296,23 @@ fn draw_slurm_panel(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rec
     }).collect();
 
     let table = Table::new(rows, [
-        Constraint::Length(9),   // Job ID
-        Constraint::Length(10),  // Partition
+        Constraint::Length(10),  // Job ID
+        Constraint::Length(8),   // Partition
         Constraint::Min(14),     // Name
         Constraint::Length(4),   // St
-        Constraint::Length(11),  // Time Used
-        Constraint::Length(11),  // Time Left
+        Constraint::Length(10),  // Time Used
+        Constraint::Length(12),  // Time Left
         Constraint::Length(5),   // CPUs
-        Constraint::Length(8),   // Mem
-        Constraint::Length(5),   // Nodes
-        Constraint::Min(16),     // Reason / Start
+        Constraint::Length(6),   // Mem
+        Constraint::Length(6),   // Nodes
+        Constraint::Min(14),     // Reason / Start
     ])
     .header(header)
     .block(Block::default().borders(Borders::ALL).border_type(BorderType::Rounded)
         .border_style(Style::default().fg(SLURM_COLOR))
-        .title(Span::styled(format!(" SLURM Jobs ({}) ", app.jobs.len()), Style::default().fg(Color::Gray)))
-        .padding(Padding::horizontal(1)))
-    .row_highlight_style(Style::default().bg(Color::Rgb(20, 50, 50)).add_modifier(Modifier::BOLD));
+        .title(Span::styled(format!(" SLURM Jobs ({}) ", app.jobs.len()), Style::default().fg(Color::Gray))))
+    .row_highlight_style(Style::default().bg(Color::Rgb(20, 50, 50)).add_modifier(Modifier::BOLD))
+    .column_spacing(1);
 
     let mut state = TableState::default();
     frame.render_stateful_widget(table, area, &mut state);
