@@ -46,6 +46,10 @@ pub struct App {
     pub show_slurm: bool,
     /// Pending state-change notification (shown in header, cleared after display).
     pub slurm_notification: Option<String>,
+    /// Whether j/k focus is on the SLURM panel (vs session list).
+    pub slurm_focused: bool,
+    /// Scroll offset for the SLURM job list (in jobs, not lines).
+    pub slurm_scroll: usize,
 
     // Last attached session (for window/pane info display)
     pub last_session: Option<String>,
@@ -76,6 +80,8 @@ impl App {
             slurm_available,
             show_slurm: false,
             slurm_notification: None,
+            slurm_focused: false,
+            slurm_scroll: 0,
             last_session: None,
             _config_dir: config_dir,
         })
@@ -118,6 +124,25 @@ impl App {
         self.show_slurm = !self.show_slurm;
         if self.show_slurm {
             self.refresh_jobs();
+        } else {
+            self.slurm_focused = false;
+            self.slurm_scroll = 0;
+        }
+    }
+
+    pub fn toggle_slurm_focus(&mut self) {
+        if self.show_slurm {
+            self.slurm_focused = !self.slurm_focused;
+        }
+    }
+
+    pub fn slurm_scroll_up(&mut self) {
+        self.slurm_scroll = self.slurm_scroll.saturating_sub(1);
+    }
+
+    pub fn slurm_scroll_down(&mut self) {
+        if !self.jobs.is_empty() && self.slurm_scroll + 1 < self.jobs.len() {
+            self.slurm_scroll += 1;
         }
     }
 

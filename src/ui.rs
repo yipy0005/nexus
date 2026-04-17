@@ -28,6 +28,7 @@ static HINTS: &[(&str, &str)] = &[
     ("x",        "kill"),
     ("/",        "search"),
     ("S",        "slurm"),
+    ("Tab",      "focus slurm"),
     ("R",        "refresh"),
     ("q",        "quit"),
 ];
@@ -246,6 +247,8 @@ fn draw_session_list(frame: &mut Frame, app: &mut App, area: ratatui::layout::Re
 // SLURM panel — card-per-job layout, no column truncation
 // ---------------------------------------------------------------------------
 fn draw_slurm_panel(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rect) {
+    let border_color = if app.slurm_focused { Color::White } else { SLURM_COLOR };
+
     if !app.slurm_available {
         frame.render_widget(
             Paragraph::new(vec![
@@ -256,7 +259,7 @@ fn draw_slurm_panel(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rec
                 )),
             ])
             .block(Block::default().borders(Borders::ALL).border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(SLURM_COLOR))
+                .border_style(Style::default().fg(border_color))
                 .title(Span::styled(" SLURM Jobs ", Style::default().fg(Color::Gray)))),
             area,
         );
@@ -270,7 +273,7 @@ fn draw_slurm_panel(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rec
                 Line::from(Span::styled("  No jobs in queue.", Style::default().fg(Color::DarkGray))),
             ])
             .block(Block::default().borders(Borders::ALL).border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(SLURM_COLOR))
+                .border_style(Style::default().fg(border_color))
                 .title(Span::styled(" SLURM Jobs ", Style::default().fg(Color::Gray)))),
             area,
         );
@@ -308,16 +311,21 @@ fn draw_slurm_panel(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rec
         ListItem::new(vec![line1, line2, line3])
     }).collect();
 
+    let total = app.jobs.len();
+    let scroll = app.slurm_scroll;
+    let scroll_hint = if total > 1 {
+        format!(" SLURM Jobs ({})  [{}/{}]  Tab:focus  j/k:scroll ", total, scroll + 1, total)
+    } else {
+        format!(" SLURM Jobs ({}) ", total)
+    };
+
     let list = List::new(items)
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(SLURM_COLOR))
-                .title(Span::styled(
-                    format!(" SLURM Jobs ({}) ", app.jobs.len()),
-                    Style::default().fg(Color::Gray),
-                ))
+                .border_style(Style::default().fg(border_color))
+                .title(Span::styled(scroll_hint, Style::default().fg(Color::Gray)))
                 .padding(Padding::vertical(1)),
         )
         .highlight_style(
@@ -325,6 +333,7 @@ fn draw_slurm_panel(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rec
         );
 
     let mut state = ListState::default();
+    state.select(Some(scroll));
     frame.render_stateful_widget(list, area, &mut state);
 }
 

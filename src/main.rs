@@ -153,30 +153,37 @@ fn handle_key(app: &mut App, key: KeyCode) {
     // Normal navigation and actions — always available
     app.clear_status();
     match key {
-        // Navigation
-        KeyCode::Up | KeyCode::Char('k')    => app.move_up(),
-        KeyCode::Down | KeyCode::Char('j')  => app.move_down(),
+        // Navigation — routes to SLURM scroll when that panel is focused
+        KeyCode::Up | KeyCode::Char('k') => {
+            if app.slurm_focused { app.slurm_scroll_up(); } else { app.move_up(); }
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            if app.slurm_focused { app.slurm_scroll_down(); } else { app.move_down(); }
+        }
+
+        // Tab switches focus between sessions and SLURM panel
+        KeyCode::Tab => app.toggle_slurm_focus(),
 
         // Primary action
-        KeyCode::Enter                       => app.attach_selected(),
+        KeyCode::Enter => app.attach_selected(),
 
         // Session management
-        KeyCode::Char('n')                   => app.start_new_session(),
-        KeyCode::Char('l')                   => app.start_new_layout(),
-        KeyCode::Char('r')                   => app.start_rename(),
-        KeyCode::Char('x')                   => app.start_kill(),
+        KeyCode::Char('n') => app.start_new_session(),
+        KeyCode::Char('l') => app.start_new_layout(),
+        KeyCode::Char('r') => app.start_rename(),
+        KeyCode::Char('x') => app.start_kill(),
 
         // Search
-        KeyCode::Char('/')                   => app.start_search(),
+        KeyCode::Char('/') => app.start_search(),
 
         // SLURM toggle
-        KeyCode::Char('S')                   => app.toggle_slurm(),
+        KeyCode::Char('S') => app.toggle_slurm(),
 
         // Refresh
-        KeyCode::Char('R')                   => app.refresh(),
+        KeyCode::Char('R') => app.refresh(),
 
         // Quit
-        KeyCode::Char('q') | KeyCode::Esc   => app.should_quit = true,
+        KeyCode::Char('q') | KeyCode::Esc => app.should_quit = true,
 
         _ => {}
     }
