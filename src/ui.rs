@@ -7,8 +7,7 @@ use ratatui::{
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{
-        Block, BorderType, Borders, Cell, Clear, List, ListItem, ListState, Padding, Paragraph,
-        Row, Table, TableState, Wrap,
+        Block, BorderType, Borders, Clear, List, ListItem, ListState, Padding, Paragraph, Wrap,
     },
 };
 
@@ -244,14 +243,17 @@ fn draw_session_list(frame: &mut Frame, app: &mut App, area: ratatui::layout::Re
 }
 
 // ---------------------------------------------------------------------------
-// SLURM panel (shown below sessions when toggled)
+// SLURM panel — card-per-job layout, no column truncation
 // ---------------------------------------------------------------------------
 fn draw_slurm_panel(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rect) {
     if !app.slurm_available {
         frame.render_widget(
             Paragraph::new(vec![
                 Line::from(""),
-                Line::from(Span::styled("  SLURM not available on this system (squeue not found).", Style::default().fg(Color::DarkGray))),
+                Line::from(Span::styled(
+                    "  SLURM not available on this system (squeue not found).",
+                    Style::default().fg(Color::DarkGray),
+                )),
             ])
             .block(Block::default().borders(Borders::ALL).border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(SLURM_COLOR))
@@ -275,47 +277,65 @@ fn draw_slurm_panel(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rec
         return;
     }
 
-    let header = Row::new(["Job ID", "Partition", "Name", "St", "Time Used", "Time Left", "CPUs", "Mem", "Nodes", "Node/Reason"].map(|h|
-        Cell::from(h).style(Style::default().fg(Color::Gray).add_modifier(Modifier::BOLD))
-    )).height(1).bottom_margin(1);
-
-    let rows: Vec<Row> = app.jobs.iter().map(|j| {
+    // Build one ListItem per job — 3 lines each, all fields visible
+    let items: Vec<ListItem> = app.jobs.iter().map(|j| {
         let state_color = j.state.color();
-        Row::new(vec![
-            Cell::from(j.id.clone()).style(Style::default().fg(Color::White)),
-            Cell::from(j.partition.clone()).style(Style::default().fg(Color::DarkGray)),
-            Cell::from(j.name.clone()).style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
-            Cell::from(j.state.short_label().to_string()).style(Style::default().fg(state_color).add_modifier(Modifier::BOLD)),
-            Cell::from(j.time_used.clone()).style(Style::default().fg(Color::White)),
-            Cell::from(j.time_left.clone()).style(Style::default().fg(Color::White)),
-            Cell::from(j.cpus.clone()).style(Style::default().fg(Color::DarkGray)),
-            Cell::from(j.memory.clone()).style(Style::default().fg(Color::DarkGray)),
-            Cell::from(j.nodes.clone()).style(Style::default().fg(Color::DarkGray)),
-            Cell::from(j.reason.clone()).style(Style::default().fg(Color::DarkGray)),
-        ])
+
+        // Line 1: job id + name + state badge
+        let line1 = Line::from(vec![
+            Span::styled(format!(" {} ", j.id), Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::styled("│ ", Style::default().fg(Color::DarkGray)),
+            Span::styled(j.name.clone(), Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::raw("  "),
+            Span::styled(
+                format!(" {} ", j.state.label()),
+                Style::default().fg(Color::Black).bg(state_color).add_modifier(Modifier::BOLD),
+            ),
+            Span::raw("  "),
+            Span::styled(j.partition.clone(), Style::default().fg(Color::DarkGray)),
+        ]);
+
+        // Line 2: timing
+        let line2 = Line::from(vec![
+            Span::styled("   ⏱ used ", Style::default().fg(Color::DarkGray)),
+            Span::styled(j.time_used.clone(), Style::default().fg(Color::White)),
+            Span::styled("  left ", Style::default().fg(Color::DarkGray)),
+            Span::styled(j.time_left.clone(), Style::default().fg(Color::Rgb(80, 200, 120))),
+        ]);
+
+        // Line 3: resources
+        let line3 = Line::from(vec![
+            Span::styled("   CPUs ", Style::default().fg(Color::DarkGray)),
+            Span::styled(j.cpus.clone(), Style::default().fg(Color::White)),
+            Span::styled("  Mem ", Style::default().fg(Color::DarkGray)),
+            Span::styled(j.memory.clone(), Style::default().fg(Color::White)),
+            Span::styled("  Nodes ", Style::default().fg(Color::DarkGray)),
+            Span::styled(j.nodes.clone(), Style::default().fg(Color::White)),
+            Span::styled("  Node ", Style::default().fg(Color::DarkGray)),
+            Span::styled(j.reason.clone(), Style::default().fg(Color::White)),
+        ]);
+
+        ListItem::new(vec![line1, line2, line3])
     }).collect();
 
-    let table = Table::new(rows, [
-        Constraint::Length(10),  // Job ID      e.g. 45400853
-        Constraint::Length(9),   // Partition   e.g. ncpu
-        Constraint::Min(10),     // Name        expands to fill
-        Constraint::Length(4),   // St          e.g. R
-        Constraint::Length(10),  // Time Used   e.g. 9:49:39
-        Constraint::Length(12),  // Time Left   e.g. 6-14:10:21
-        Constraint::Length(5),   // CPUs        e.g. 64
-        Constraint::Length(5),   // Mem         e.g. 32G
-        Constraint::Length(6),   // Nodes       e.g. 1
-        Constraint::Min(8),      // Node/Reason e.g. cn010
-    ])
-    .header(header)
-    .block(Block::default().borders(Borders::ALL).border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(SLURM_COLOR))
-        .title(Span::styled(format!(" SLURM Jobs ({}) ", app.jobs.len()), Style::default().fg(Color::Gray))))
-    .row_highlight_style(Style::default().bg(Color::Rgb(20, 50, 50)).add_modifier(Modifier::BOLD))
-    .column_spacing(1);
+    let list = List::new(items)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(SLURM_COLOR))
+                .title(Span::styled(
+                    format!(" SLURM Jobs ({}) ", app.jobs.len()),
+                    Style::default().fg(Color::Gray),
+                ))
+                .padding(Padding::vertical(1)),
+        )
+        .highlight_style(
+            Style::default().bg(Color::Rgb(20, 50, 50)).add_modifier(Modifier::BOLD),
+        );
 
-    let mut state = TableState::default();
-    frame.render_stateful_widget(table, area, &mut state);
+    let mut state = ListState::default();
+    frame.render_stateful_widget(list, area, &mut state);
 }
 
 // ---------------------------------------------------------------------------

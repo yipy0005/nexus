@@ -25,6 +25,7 @@ impl JobState {
     }
 
     /// Short two-letter label matching squeue's %.2t format.
+    #[allow(dead_code)]
     pub fn short_label(&self) -> &str {
         match self {
             JobState::Running    => "R",
