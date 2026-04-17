@@ -281,38 +281,37 @@ fn draw_slurm_panel(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rec
     let items: Vec<ListItem> = app.jobs.iter().map(|j| {
         let state_color = j.state.color();
 
-        // Line 1: job id + name + state badge
+        // Line 1: job id + name + state badge + partition
         let line1 = Line::from(vec![
-            Span::styled(format!(" {} ", j.id), Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
-            Span::styled("│ ", Style::default().fg(Color::DarkGray)),
+            Span::styled(format!(" {}", j.id), Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::styled("  ", Style::default()),
             Span::styled(j.name.clone(), Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
-            Span::raw("  "),
+            Span::styled("  ", Style::default()),
             Span::styled(
-                format!(" {} ", j.state.label()),
-                Style::default().fg(Color::Black).bg(state_color).add_modifier(Modifier::BOLD),
+                format!("[{}]", j.state.label()),
+                Style::default().fg(state_color).add_modifier(Modifier::BOLD),
             ),
-            Span::raw("  "),
-            Span::styled(j.partition.clone(), Style::default().fg(Color::DarkGray)),
+            Span::styled(format!("  partition:{}", j.partition), Style::default().fg(Color::DarkGray)),
         ]);
 
         // Line 2: timing
         let line2 = Line::from(vec![
-            Span::styled("   ⏱ used ", Style::default().fg(Color::DarkGray)),
-            Span::styled(j.time_used.clone(), Style::default().fg(Color::White)),
-            Span::styled("  left ", Style::default().fg(Color::DarkGray)),
-            Span::styled(j.time_left.clone(), Style::default().fg(Color::Rgb(80, 200, 120))),
+            Span::styled("   used:", Style::default().fg(Color::DarkGray)),
+            Span::styled(format!("{}", j.time_used), Style::default().fg(Color::White)),
+            Span::styled("  left:", Style::default().fg(Color::DarkGray)),
+            Span::styled(format!("{}", j.time_left), Style::default().fg(Color::Rgb(80, 200, 120))),
         ]);
 
         // Line 3: resources
         let line3 = Line::from(vec![
-            Span::styled("   CPUs ", Style::default().fg(Color::DarkGray)),
-            Span::styled(j.cpus.clone(), Style::default().fg(Color::White)),
-            Span::styled("  Mem ", Style::default().fg(Color::DarkGray)),
-            Span::styled(j.memory.clone(), Style::default().fg(Color::White)),
-            Span::styled("  Nodes ", Style::default().fg(Color::DarkGray)),
-            Span::styled(j.nodes.clone(), Style::default().fg(Color::White)),
-            Span::styled("  Node ", Style::default().fg(Color::DarkGray)),
-            Span::styled(j.reason.clone(), Style::default().fg(Color::White)),
+            Span::styled("   cpus:", Style::default().fg(Color::DarkGray)),
+            Span::styled(format!("{}", j.cpus), Style::default().fg(Color::White)),
+            Span::styled("  mem:", Style::default().fg(Color::DarkGray)),
+            Span::styled(format!("{}", j.memory), Style::default().fg(Color::White)),
+            Span::styled("  nodes:", Style::default().fg(Color::DarkGray)),
+            Span::styled(format!("{}", j.nodes), Style::default().fg(Color::White)),
+            Span::styled("  node:", Style::default().fg(Color::DarkGray)),
+            Span::styled(format!("{}", j.reason), Style::default().fg(Color::White)),
         ]);
 
         ListItem::new(vec![line1, line2, line3])
