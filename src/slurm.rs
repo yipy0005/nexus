@@ -86,6 +86,7 @@ pub struct Job {
     pub memory: String,
     pub nodes: String,
     pub reason: String,
+    #[allow(dead_code)]
     pub start_time: String,
 }
 

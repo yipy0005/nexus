@@ -275,7 +275,7 @@ fn draw_slurm_panel(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rec
         return;
     }
 
-    let header = Row::new(["Job ID", "Partition", "Name", "St", "Time Used", "Time Left", "CPUs", "Mem", "Nodes", "Reason / Start"].map(|h|
+    let header = Row::new(["Job ID", "Partition", "Name", "St", "Time Used", "Time Left", "CPUs", "Mem", "Nodes", "Node/Reason"].map(|h|
         Cell::from(h).style(Style::default().fg(Color::Gray).add_modifier(Modifier::BOLD))
     )).height(1).bottom_margin(1);
 
@@ -291,21 +291,21 @@ fn draw_slurm_panel(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rec
             Cell::from(j.cpus.clone()).style(Style::default().fg(Color::DarkGray)),
             Cell::from(j.memory.clone()).style(Style::default().fg(Color::DarkGray)),
             Cell::from(j.nodes.clone()).style(Style::default().fg(Color::DarkGray)),
-            Cell::from(format!("{}  {}", j.reason, j.start_time)).style(Style::default().fg(Color::DarkGray)),
+            Cell::from(j.reason.clone()).style(Style::default().fg(Color::DarkGray)),
         ])
     }).collect();
 
     let table = Table::new(rows, [
-        Constraint::Length(10),  // Job ID
-        Constraint::Length(8),   // Partition
-        Constraint::Min(14),     // Name
-        Constraint::Length(4),   // St
-        Constraint::Length(10),  // Time Used
-        Constraint::Length(12),  // Time Left
-        Constraint::Length(5),   // CPUs
-        Constraint::Length(6),   // Mem
-        Constraint::Length(6),   // Nodes
-        Constraint::Min(14),     // Reason / Start
+        Constraint::Length(10),  // Job ID      e.g. 45400853
+        Constraint::Length(9),   // Partition   e.g. ncpu
+        Constraint::Min(10),     // Name        expands to fill
+        Constraint::Length(4),   // St          e.g. R
+        Constraint::Length(10),  // Time Used   e.g. 9:49:39
+        Constraint::Length(12),  // Time Left   e.g. 6-14:10:21
+        Constraint::Length(5),   // CPUs        e.g. 64
+        Constraint::Length(5),   // Mem         e.g. 32G
+        Constraint::Length(6),   // Nodes       e.g. 1
+        Constraint::Min(8),      // Node/Reason e.g. cn010
     ])
     .header(header)
     .block(Block::default().borders(Borders::ALL).border_type(BorderType::Rounded)
