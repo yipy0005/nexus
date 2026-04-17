@@ -51,6 +51,7 @@ impl JobState {
         }
     }
 
+    #[allow(dead_code)]
     pub fn color(&self) -> ratatui::style::Color {
         use ratatui::style::Color;
         match self {

@@ -279,39 +279,30 @@ fn draw_slurm_panel(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rec
 
     // Build one ListItem per job — 3 lines each, all fields visible
     let items: Vec<ListItem> = app.jobs.iter().map(|j| {
-        let state_color = j.state.color();
 
-        // Line 1: job id + name + state badge + partition
+        // Line 1: job id + name + state + partition
         let line1 = Line::from(vec![
-            Span::styled(format!(" {}", j.id), Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
-            Span::styled("  ", Style::default()),
-            Span::styled(j.name.clone(), Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
-            Span::styled("  ", Style::default()),
-            Span::styled(
-                format!("[{}]", j.state.label()),
-                Style::default().fg(state_color).add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(format!("  partition:{}", j.partition), Style::default().fg(Color::DarkGray)),
+            Span::raw(format!(" {}  {}  [{}]  {}", j.id, j.name, j.state.label(), j.partition)),
         ]);
 
         // Line 2: timing
         let line2 = Line::from(vec![
-            Span::styled("   used:", Style::default().fg(Color::DarkGray)),
-            Span::styled(format!("{}", j.time_used), Style::default().fg(Color::White)),
-            Span::styled("  left:", Style::default().fg(Color::DarkGray)),
-            Span::styled(format!("{}", j.time_left), Style::default().fg(Color::Rgb(80, 200, 120))),
+            Span::raw("   used:"),
+            Span::styled(j.time_used.clone(), Style::default().fg(Color::White)),
+            Span::raw("  left:"),
+            Span::styled(j.time_left.clone(), Style::default().fg(Color::Rgb(80, 200, 120))),
         ]);
 
         // Line 3: resources
         let line3 = Line::from(vec![
-            Span::styled("   cpus:", Style::default().fg(Color::DarkGray)),
-            Span::styled(format!("{}", j.cpus), Style::default().fg(Color::White)),
-            Span::styled("  mem:", Style::default().fg(Color::DarkGray)),
-            Span::styled(format!("{}", j.memory), Style::default().fg(Color::White)),
-            Span::styled("  nodes:", Style::default().fg(Color::DarkGray)),
-            Span::styled(format!("{}", j.nodes), Style::default().fg(Color::White)),
-            Span::styled("  node:", Style::default().fg(Color::DarkGray)),
-            Span::styled(format!("{}", j.reason), Style::default().fg(Color::White)),
+            Span::raw("   cpus:"),
+            Span::raw(j.cpus.clone()),
+            Span::raw("  mem:"),
+            Span::raw(j.memory.clone()),
+            Span::raw("  nodes:"),
+            Span::raw(j.nodes.clone()),
+            Span::raw("  node:"),
+            Span::raw(j.reason.clone()),
         ]);
 
         ListItem::new(vec![line1, line2, line3])
