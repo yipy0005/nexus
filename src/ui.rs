@@ -122,6 +122,18 @@ fn draw_header(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         ));
     }
 
+    // SLURM state-change notification
+    if let Some(ref note) = app.slurm_notification {
+        spans.push(Span::raw("  "));
+        spans.push(Span::styled(
+            format!(" {note} "),
+            Style::default()
+                .fg(Color::Black)
+                .bg(SLURM_COLOR)
+                .add_modifier(Modifier::BOLD),
+        ));
+    }
+
     frame.render_widget(
         Paragraph::new(Line::from(spans))
             .block(Block::default().borders(Borders::ALL)
@@ -263,25 +275,37 @@ fn draw_slurm_panel(frame: &mut Frame, app: &mut App, area: ratatui::layout::Rec
         return;
     }
 
-    let header = Row::new(["Job ID", "Name", "State", "Partition", "Nodes", "Time", "Limit"].map(|h|
+    let header = Row::new(["Job ID", "Partition", "Name", "St", "Time Used", "Time Left", "CPUs", "Mem", "Nodes", "Reason / Start"].map(|h|
         Cell::from(h).style(Style::default().fg(Color::Gray).add_modifier(Modifier::BOLD))
     )).height(1).bottom_margin(1);
 
     let rows: Vec<Row> = app.jobs.iter().map(|j| {
+        let state_color = j.state.color();
         Row::new(vec![
             Cell::from(j.id.clone()).style(Style::default().fg(Color::White)),
-            Cell::from(j.name.clone()).style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
-            Cell::from(j.state.label().to_string()).style(Style::default().fg(j.state.color()).add_modifier(Modifier::BOLD)),
             Cell::from(j.partition.clone()).style(Style::default().fg(Color::DarkGray)),
-            Cell::from(j.nodes.clone()).style(Style::default().fg(Color::DarkGray)),
+            Cell::from(j.name.clone()).style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Cell::from(j.state.short_label().to_string()).style(Style::default().fg(state_color).add_modifier(Modifier::BOLD)),
             Cell::from(j.time_used.clone()).style(Style::default().fg(Color::White)),
-            Cell::from(j.time_limit.clone()).style(Style::default().fg(Color::DarkGray)),
+            Cell::from(j.time_left.clone()).style(Style::default().fg(Color::White)),
+            Cell::from(j.cpus.clone()).style(Style::default().fg(Color::DarkGray)),
+            Cell::from(j.memory.clone()).style(Style::default().fg(Color::DarkGray)),
+            Cell::from(j.nodes.clone()).style(Style::default().fg(Color::DarkGray)),
+            Cell::from(format!("{}  {}", j.reason, j.start_time)).style(Style::default().fg(Color::DarkGray)),
         ])
     }).collect();
 
     let table = Table::new(rows, [
-        Constraint::Length(10), Constraint::Min(12), Constraint::Length(11),
-        Constraint::Length(12), Constraint::Length(8), Constraint::Length(10), Constraint::Length(10),
+        Constraint::Length(9),   // Job ID
+        Constraint::Length(10),  // Partition
+        Constraint::Min(14),     // Name
+        Constraint::Length(4),   // St
+        Constraint::Length(11),  // Time Used
+        Constraint::Length(11),  // Time Left
+        Constraint::Length(5),   // CPUs
+        Constraint::Length(8),   // Mem
+        Constraint::Length(5),   // Nodes
+        Constraint::Min(16),     // Reason / Start
     ])
     .header(header)
     .block(Block::default().borders(Borders::ALL).border_type(BorderType::Rounded)

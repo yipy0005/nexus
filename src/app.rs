@@ -44,6 +44,8 @@ pub struct App {
     pub slurm_available: bool,
     /// Whether the SLURM panel is currently visible.
     pub show_slurm: bool,
+    /// Pending state-change notification (shown in header, cleared after display).
+    pub slurm_notification: Option<String>,
 
     // Last attached session (for window/pane info display)
     pub last_session: Option<String>,
@@ -73,6 +75,7 @@ impl App {
             jobs,
             slurm_available,
             show_slurm: false,
+            slurm_notification: None,
             last_session: None,
             _config_dir: config_dir,
         })
@@ -101,7 +104,13 @@ impl App {
 
     pub fn refresh_jobs(&mut self) {
         if self.slurm_available {
-            self.jobs = slurm::list_jobs();
+            let new_jobs = slurm::list_jobs();
+            // Detect state changes and queue a notification
+            let changes = slurm::detect_changes(&self.jobs, &new_jobs);
+            if !changes.is_empty() {
+                self.slurm_notification = Some(changes.join("  "));
+            }
+            self.jobs = new_jobs;
         }
     }
 

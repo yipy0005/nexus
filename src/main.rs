@@ -70,10 +70,15 @@ fn run_app<B: ratatui::backend::Backend>(
     app: &mut App,
 ) -> Result<()> {
     const CPU_REFRESH: Duration = Duration::from_secs(5);
-    const SLURM_REFRESH: Duration = Duration::from_secs(30);
+    // Poll faster when panel is open (5s), slower in background (15s)
+    const SLURM_REFRESH_ACTIVE: Duration = Duration::from_secs(5);
+    const SLURM_REFRESH_BG: Duration = Duration::from_secs(15);
+    // Clear job notifications after 8 seconds
+    const NOTIF_TTL: Duration = Duration::from_secs(8);
 
     let mut last_cpu = Instant::now();
     let mut last_slurm = Instant::now();
+    let mut notif_shown_at: Option<Instant> = None;
 
     loop {
         terminal.draw(|f| ui::draw(f, app))?;
@@ -82,10 +87,22 @@ fn run_app<B: ratatui::backend::Backend>(
             return Ok(());
         }
 
+        // Clear notification after TTL
+        if let Some(t) = notif_shown_at {
+            if t.elapsed() >= NOTIF_TTL {
+                app.slurm_notification = None;
+                notif_shown_at = None;
+            }
+        }
+        if app.slurm_notification.is_some() && notif_shown_at.is_none() {
+            notif_shown_at = Some(Instant::now());
+        }
+
+        let slurm_interval = if app.show_slurm { SLURM_REFRESH_ACTIVE } else { SLURM_REFRESH_BG };
         let timeout = CPU_REFRESH
             .checked_sub(last_cpu.elapsed())
             .unwrap_or(Duration::ZERO)
-            .min(SLURM_REFRESH.checked_sub(last_slurm.elapsed()).unwrap_or(Duration::ZERO));
+            .min(slurm_interval.checked_sub(last_slurm.elapsed()).unwrap_or(Duration::ZERO));
 
         if event::poll(timeout)? {
             if let Event::Key(key) = event::read()? {
@@ -100,7 +117,8 @@ fn run_app<B: ratatui::backend::Backend>(
             app.refresh_cpu();
             last_cpu = Instant::now();
         }
-        if last_slurm.elapsed() >= SLURM_REFRESH && app.show_slurm {
+        let slurm_due = last_slurm.elapsed() >= slurm_interval;
+        if slurm_due && app.slurm_available {
             app.refresh_jobs();
             last_slurm = Instant::now();
         }
